@@ -1,0 +1,15 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: "WEB-CLIENT"
+
+#  config:
+#    import: optional:configserver:http://localhost:8888
+
+#logging:
+#  level:
+#    org:
+#      springframework: DEBUG
+
