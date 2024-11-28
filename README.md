@@ -33,6 +33,15 @@ drop table if exists blocked_products;
 ```
 и больше тесты не конфликтуют. Но это хорошо только с БД в памяти, типа H2.
 
+## TODO:
+В версии Spring Boot 3.4 аннотация @MockBean объявлена устаревшей
+и рекомендуется от неё отказаться.
+
+Тут либо преходить на @TestConfiguration+@Import, либо использовать
+Mockito напрямую через @Mock и @InjectMocks, либо как в Service-User
+использовать для тестов подставную БД. 
+
+Нужно решить.
 
 
 ## H2-Console
