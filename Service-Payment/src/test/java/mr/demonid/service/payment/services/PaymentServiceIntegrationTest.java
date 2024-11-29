@@ -6,10 +6,12 @@ import mr.demonid.service.payment.dto.UserPayInfo;
 import mr.demonid.service.payment.exceptions.PaymentException;
 import mr.demonid.service.payment.links.UserServiceClient;
 import mr.demonid.service.payment.repository.PaymentRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -19,9 +21,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@SpringBootTest(classes = PaymentServiceIntegrationTest.TestConfig.class)
 @ActiveProfiles(profiles = "test")
 public class PaymentServiceIntegrationTest {
 
@@ -29,17 +31,48 @@ public class PaymentServiceIntegrationTest {
     private static final long recipientId = 2L;
     private static final long accountId = 1L;
 
-    @Autowired
     private PaymentService paymentService;
-
-    @MockBean
     private UserServiceClient userServiceClient;
-
-    @MockBean
     private PaymentRepository paymentRepository;
 
-    private PaymentRequest paymentRequest = new PaymentRequest(UUID.randomUUID(), userId, recipientId, BigDecimal.valueOf(100), "DEBIT");
-    private UserPayInfo userPayInfo = new UserPayInfo(userId, accountId, BigDecimal.valueOf(500));
+    private PaymentRequest paymentRequest;
+    private UserPayInfo userPayInfo;
+
+    /**
+     * Конфигурация для теста. Мокаем зависимости и подключаем бин реального
+     * сервиса, который и будем тестировать.
+     * То есть создаем контекст для теста.
+     */
+    @Configuration
+    static class TestConfig {
+        @Bean
+        public UserServiceClient userServiceClient() {
+            return mock(UserServiceClient.class);
+        }
+
+        @Bean
+        public PaymentRepository paymentRepository() {
+            return mock(PaymentRepository.class);
+        }
+
+        @Bean
+        public PaymentService paymentService(UserServiceClient userServiceClient, PaymentRepository paymentRepository) {
+            return new PaymentService(userServiceClient, paymentRepository);
+        }
+    }
+
+    /**
+     * Подготавливаем данные для каждого тестового метода.
+     */
+    @BeforeEach
+    public void setup(@Autowired PaymentService paymentService, @Autowired UserServiceClient userServiceClient, @Autowired PaymentRepository paymentRepository) {
+        this.paymentService = paymentService;
+        this.userServiceClient = userServiceClient;
+        this.paymentRepository = paymentRepository;
+
+        paymentRequest = new PaymentRequest(UUID.randomUUID(), userId, recipientId, BigDecimal.valueOf(100), "DEBIT");
+        userPayInfo = new UserPayInfo(userId, accountId, BigDecimal.valueOf(500));
+    }
 
 
     /**

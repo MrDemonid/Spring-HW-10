@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
@@ -26,7 +28,7 @@ import static org.mockito.Mockito.*;
  * Проверка проводится в контексте программы, где реальный
  * сервис тестируется в работе с замоканными зависимостями.
  */
-@SpringBootTest
+@SpringBootTest(classes = ProductServiceIntegrationTest.TestConfig.class)
 @ActiveProfiles(profiles = "test")
 //@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ProductServiceIntegrationTest {
@@ -36,24 +38,50 @@ class ProductServiceIntegrationTest {
     private static final int reserveQuantity = 5;
 
 
-    @Autowired
-    private ProductService productService; // Реальный сервис
-
-    @MockBean
-    private ProductRepository productRepository; // Мокаем репозиторий
-
-    @MockBean
-    private BlockedProductService blockedProductService; // Мокаем зависимость
-
+    private ProductService productService;
+    private ProductRepository productRepository;
+    private BlockedProductService blockedProductService;
 
     ProductReservationRequest request;
     Product product;
+
+
+    /**
+     * Конфигурация для теста. Заменяем часть зависимостей
+     * моками или инициализируем реальными объектами.
+     */
+    @Configuration
+    static class TestConfig {
+
+        @Bean
+        public ProductRepository productRepository() {
+            return mock(ProductRepository.class);
+        }
+
+        @Bean
+        public BlockedProductService blockedProductService() {
+            return mock(BlockedProductService.class);
+        }
+
+        /*
+         * Используем реальный сервис, поскольку его и будем тестировать.
+         */
+        @Bean
+        public ProductService productService(ProductRepository productRepository, BlockedProductService blockedProductService) {
+            return new ProductService(productRepository, blockedProductService);
+        }
+    }
+
 
     /**
      * Подготавливаем данные для каждого тестового метода.
      */
     @BeforeEach
-    public void setup() {
+    public void setup(@Autowired ProductService productService, @Autowired ProductRepository productRepository, @Autowired BlockedProductService blockedProductService) {
+        this.productService = productService;
+        this.productRepository = productRepository;
+        this.blockedProductService = blockedProductService;
+
         request = new ProductReservationRequest(UUID.randomUUID(), userId, productId, reserveQuantity, BigDecimal.valueOf(800));
         product = new Product();
         product.setId(productId);
